@@ -3,24 +3,32 @@ package com.gypApp_main.service;
 import com.gypApp_main.dto.TrainerWorkloadRequest;
 import com.gypApp_main.model.Training;
 import com.gypApp_main.security.JWTProvider;
+import com.gypApp_main.utils.CircuitBreakerManager;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import lombok.RequiredArgsConstructor;
+import io.github.resilience4j.circuitbreaker.event.CircuitBreakerEvent;
+import io.github.resilience4j.circuitbreaker.event.CircuitBreakerOnErrorEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.time.Duration;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TrainerWorkLoadService implements WorkLoadService {
 
     private final WebClient.Builder webClientBuilder;
     private final JWTProvider provider;
+    private final CircuitBreakerManager circuitBreakerManager;
+
+    public TrainerWorkLoadService(WebClient.Builder webClientBuilder, JWTProvider provider ) {
+        this.webClientBuilder = webClientBuilder;
+        this.provider = provider;
+        this.circuitBreakerManager = new CircuitBreakerManager("TrainerWorkLoadService");
+    }
 
 
     @CircuitBreaker(name = "TrainerWorkLoadService", fallbackMethod = "updateWorkLoadFallback")
@@ -31,7 +39,8 @@ public class TrainerWorkLoadService implements WorkLoadService {
         log.info("Here is toke for trainerworkload {}", token);
         log.info("Action type {}", action);
 
-        webClientBuilder.build()
+
+        TrainerWorkloadRequest response = webClientBuilder.build()
                 .post()
                 .uri("/updateWorkLoad/update")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
@@ -39,9 +48,9 @@ public class TrainerWorkLoadService implements WorkLoadService {
                 .body(BodyInserters.fromValue(createRequest(training, action)))
                 .retrieve()
                 .bodyToMono(TrainerWorkloadRequest.class)
-                .subscribe();
+                .block();
 
-        log.debug("Action type {}", action);
+        log.debug("Response received successfully");
     }
 
     public TrainerWorkloadRequest createRequest(Training training, String action) {
@@ -66,14 +75,11 @@ public class TrainerWorkLoadService implements WorkLoadService {
     }
 
     public void updateWorkLoadFallback(Training training, String action, Throwable throwable) {
-        if (throwable instanceof WebClientResponseException) {
-            WebClientResponseException ex = (WebClientResponseException) throwable;
-            if (ex.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
-                log.error("SERVICE_UNAVAILABLE ", ex.getMessage());
-            }
-        }
-        log.error("Circuit Breaker triggered for updateWorkLoad: {}", throwable.getMessage());
+        circuitBreakerManager.logCircuitBreakerStatus();
+        circuitBreakerManager.logCircuitBreakerStatusAndError(throwable);
+        Duration duration = Duration.ofMillis(10000);
+        CircuitBreakerEvent circuitBreakerEvent = new CircuitBreakerOnErrorEvent("TrainerWorkLoadService", duration,throwable);
+        circuitBreakerManager.logCircuitBreakerStatusAndEvent(circuitBreakerEvent);
     }
-
-
 }
+
