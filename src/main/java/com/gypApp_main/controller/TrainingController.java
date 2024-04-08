@@ -1,5 +1,6 @@
 package com.gypApp_main.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.gypApp_main.model.Training;
 import com.gypApp_main.model.TrainingSearchCriteria;
 import com.gypApp_main.service.TrainingService;
@@ -20,7 +21,7 @@ public class TrainingController {
     private final TrainingService trainingService;
 
     @PostMapping(value = "/create_training", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> createTraining(@RequestBody Training training) {
+    public ResponseEntity<Void> createTraining(@RequestBody Training training) throws JsonProcessingException {
         String trainerName = training.getTrainer().getUser().getUserName();
         String traineeName = training.getTrainee().getUser().getUserName();
         String trainingTypeName = training.getTrainingTypes().getTrainingTypeName();
@@ -31,7 +32,7 @@ public class TrainingController {
     }
 
     @DeleteMapping("/delete/{name}")
-    public ResponseEntity<?> deleteTraining(@PathVariable String name) {
+    public ResponseEntity<?> deleteTraining(@PathVariable String name) throws JsonProcessingException {
         
         trainingService.deleteTraining(name);
         return ResponseEntity.ok().build();

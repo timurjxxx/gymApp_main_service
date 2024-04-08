@@ -1,5 +1,7 @@
 package com.gypApp_main.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.gypApp_main.activemq.TrainerWorkloadProducer;
 import com.gypApp_main.dao.TrainingDAO;
 import com.gypApp_main.model.*;
 import jakarta.persistence.criteria.Join;
@@ -27,24 +29,26 @@ public class TrainingService {
 
     private final TrainerWorkLoadService trainingWorkLoadService;
 
+    private final TrainerWorkloadProducer trainerWorkloadProducer;
+
     private final TrainingTypeService trainingTypeService;
 
 
     @Transactional
-    public Training addTraining(Training training, String trainerName, String traineeName, String trainingTypeName) {
+    public Training addTraining(Training training, String trainerName, String traineeName, String trainingTypeName) throws JsonProcessingException {
         training.setTrainer(trainerService.selectTrainerByUserName(trainerName));
         training.setTrainee(traineeService.selectTraineeByUserName(traineeName));
         training.setTrainingTypes(trainingTypeService.findByTrainingName(trainingTypeName));
         log.info("Added training with trainer name {}, and trainee name {} and trainingtype {}", trainerName, traineeName, trainingTypeName);
         log.debug("Added training details: {}", training);
-        trainingWorkLoadService.updateWorkLoad(training, "ADD");
+        trainerWorkloadProducer.updateWorkLoad(training, "ADD");
         return trainingDAO.save(training);
     }
 
     @Transactional
-    public void deleteTraining(String name) {
+    public void deleteTraining(String name) throws JsonProcessingException {
         Training training = trainingDAO.getTrainingByTrainingName(name).orElseThrow(() -> new UsernameNotFoundException("Training not found"));
-        trainingWorkLoadService.updateWorkLoad(training, "DELETE");
+        trainerWorkloadProducer.updateWorkLoad(training, "DELETE");
         trainingDAO.deleteTrainingByTrainingName(name);
     }
 
