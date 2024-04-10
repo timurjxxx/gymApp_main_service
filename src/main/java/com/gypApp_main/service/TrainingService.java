@@ -41,14 +41,14 @@ public class TrainingService {
         training.setTrainingTypes(trainingTypeService.findByTrainingName(trainingTypeName));
         log.info("Added training with trainer name {}, and trainee name {} and trainingtype {}", trainerName, traineeName, trainingTypeName);
         log.debug("Added training details: {}", training);
-        trainerWorkloadProducer.updateWorkLoad(training, "ADD");
+        trainingWorkLoadService.updateWorkLoad(training, "ADD");
         return trainingDAO.save(training);
     }
 
     @Transactional
     public void deleteTraining(String name) throws JsonProcessingException {
         Training training = trainingDAO.getTrainingByTrainingName(name).orElseThrow(() -> new UsernameNotFoundException("Training not found"));
-        trainerWorkloadProducer.updateWorkLoad(training, "DELETE");
+        trainingWorkLoadService.updateWorkLoad(training, "DELETE");
         trainingDAO.deleteTrainingByTrainingName(name);
     }
 

@@ -1,5 +1,6 @@
 package com.gypApp_main.controllerTest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.gypApp_main.controller.TrainingController;
 import com.gypApp_main.dao.TrainingDAO;
 import com.gypApp_main.model.*;
@@ -44,7 +45,7 @@ class TrainingControllerTest {
     }
 
     @Test
-    void createTraining() {
+    void createTraining() throws JsonProcessingException {
         Training training = new Training();
         Trainer trainer = new Trainer();
         trainer.setUser(new User());

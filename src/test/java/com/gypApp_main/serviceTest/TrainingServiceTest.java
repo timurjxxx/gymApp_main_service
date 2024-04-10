@@ -1,5 +1,6 @@
 package com.gypApp_main.serviceTest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.gypApp_main.dao.TrainingDAO;
 import com.gypApp_main.model.*;
 import com.gypApp_main.service.*;
@@ -51,7 +52,7 @@ class TrainingServiceTest {
     }
 
     @Test
-    void testAddTraining() {
+    void testAddTraining() throws JsonProcessingException {
         // Создаем данные для теста
         Training training = new Training();
         String trainerName = "trainerName";
